@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aurum & Co. — Fine Jewelry</title>
+
+  <!-- ── Netlify Identity Widget ── -->
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            gold: { light: '#F5E6C8', DEFAULT: '#C9A84C', dark: '#A07828' },
+            cream: '#FAF8F4',
+            charcoal: '#1C1C1C',
+          },
+          fontFamily: {
+            serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+            sans: ['Jost', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    body { background-color: #FAF8F4; color: #1C1C1C; font-family: 'Jost', sans-serif; }
+    .hero-grain::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 1;
+    }
+    #cart-sidebar { transition: transform 0.4s cubic-bezier(0.4,0,0.2,1); }
+    #cart-overlay  { transition: opacity 0.4s ease; }
+    .product-card  { transition: box-shadow 0.3s ease, transform 0.3s ease; }
+    .product-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(201,168,76,.15); }
+    .product-card:hover .add-btn { background-color: #C9A84C; color: #fff; }
+    .add-btn { transition: background-color .25s ease, color .25s ease; }
+    #toast { transition: opacity .3s ease, transform .3s ease; }
+    .form-input:focus { outline: none; border-color: #C9A84C; box-shadow: 0 0 0 2px rgba(201,168,76,.2); }
+    .shimmer {
+      background: linear-gradient(135deg,#e8dcc8 0%,#f5edd8 40%,#C9A84C22 60%,#e8dcc8 100%);
+      background-size: 200% 200%;
+      animation: shimmer 4s ease-in-out infinite;
+    }
+    @keyframes shimmer { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    @keyframes fadeUp  { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+    .fade-up  { animation: fadeUp .8s ease forwards; }
+    .delay-1  { animation-delay:.15s; opacity:0; }
+    .delay-2  { animation-delay:.3s;  opacity:0; }
+    .delay-3  { animation-delay:.45s; opacity:0; }
+    @keyframes badgePop { 0%{transform:scale(1)} 40%{transform:scale(1.4)} 100%{transform:scale(1)} }
+    .badge-pop { animation: badgePop .3s ease; }
+
+    /* ── Identity modal z-index fix ── */
+    [data-netlify-identity-menu] { z-index: 9999 !important; }
+
+    /* ── Login toast colours ── */
+    #login-banner { transition: opacity .4s ease, transform .4s ease; }
+  </style>
+</head>
+<body class="antialiased">
+
+<!-- ═══════════════════════════════════════════
+     NAVBAR
+═══════════════════════════════════════════ -->
+<nav class="fixed top-0 left-0 right-0 z-50 bg-cream/90 backdrop-blur-md border-b border-gold/20">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+
+    <!-- Logo -->
+    <a href="#" class="font-serif text-2xl font-light tracking-[0.18em] text-charcoal">
+      AURUM <span class="text-gold">&amp;</span> CO.
+    </a>
+
+    <!-- Nav links -->
+    <div class="hidden md:flex items-center gap-8 text-xs tracking-[0.14em] uppercase text-charcoal/70 font-sans">
+      <a href="#products" class="hover:text-gold transition-colors">Collections</a>
+      <a href="#about"    class="hover:text-gold transition-colors">About</a>
+      <a href="#contact"  class="hover:text-gold transition-colors">Contact</a>
+    </div>
+
+    <!-- Right cluster: Login + Cart -->
+    <div class="flex items-center gap-4">
+
+      <!-- Login / Logout button -->
+      <!-- State is toggled by the Identity logic at the bottom of this file -->
+      <button id="login-btn"  onclick="netlifyIdentity.open()"
+        class="hidden font-sans text-xs tracking-[0.15em] uppercase border border-gold/50 text-gold hover:bg-gold hover:text-white px-4 py-2 transition-all duration-200">
+        Login
+      </button>
+      <button id="logout-btn" onclick="handleLogout()"
+        class="hidden font-sans text-xs tracking-[0.15em] uppercase border border-charcoal/20 text-charcoal/60 hover:border-red-300 hover:text-red-400 px-4 py-2 transition-all duration-200">
+        Logout
+      </button>
+
+      <!-- Cart icon -->
+      <button onclick="toggleCart()" class="relative flex items-center text-charcoal hover:text-gold transition-colors focus:outline-none" aria-label="Open cart">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <path d="M16 10a4 4 0 0 1-8 0"/>
+        </svg>
+        <span id="cart-count" class="hidden absolute -top-2 -right-2 bg-gold text-white text-[10px] font-sans w-4 h-4 rounded-full flex items-center justify-center">0</span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     LOGIN BANNER  (shown after successful login for non-admins)
+═══════════════════════════════════════════ -->
+<div id="login-banner"
+  class="hidden fixed top-20 left-1/2 -translate-x-1/2 z-50
+         bg-white border border-gold/30 shadow-lg px-8 py-4 text-center opacity-0 translate-y-2">
+  <p class="font-serif text-lg text-charcoal font-light">Welcome back! <span class="text-gold">✦</span></p>
+  <p class="font-sans text-xs text-charcoal/50 tracking-wide mt-1">You are now logged in.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════ -->
+<section class="relative hero-grain min-h-screen flex items-center overflow-hidden pt-20" id="hero">
+  <div class="absolute inset-0 opacity-[0.03]"
+       style="background-image:repeating-linear-gradient(45deg,#C9A84C 0,#C9A84C 1px,transparent 0,transparent 50%);background-size:20px 20px;">
+  </div>
+  <div class="relative z-10 max-w-7xl mx-auto px-6 w-full grid md:grid-cols-2 gap-12 items-center py-20">
+    <div>
+      <p class="fade-up delay-1 font-sans text-xs tracking-[0.3em] uppercase text-gold mb-6">Fine Jewelry · Est. 2019</p>
+      <h1 class="fade-up delay-2 font-serif font-light text-5xl md:text-7xl leading-[1.1] text-charcoal mb-6">
+        Crafted for<br/><em class="text-gold">Timeless</em><br/>Elegance
+      </h1>
+      <p class="fade-up delay-3 font-sans font-light text-base text-charcoal/60 max-w-sm mb-10 leading-relaxed">
+        Each piece is handcrafted with ethically sourced gold and precious stones — a quiet declaration of grace.
+      </p>
+      <div class="fade-up delay-3 flex flex-col sm:flex-row gap-4">
+        <a href="#products"
+           class="inline-block bg-gold hover:bg-gold-dark text-white text-xs tracking-[0.2em] uppercase font-sans px-10 py-4 transition-colors duration-300">
+          Shop Now
+        </a>
+        <a href="#about"
+           class="inline-block border border-gold/50 hover:border-gold text-gold text-xs tracking-[0.2em] uppercase font-sans px-10 py-4 transition-colors duration-300">
+          Our Story
+        </a>
+      </div>
+    </div>
+    <div class="fade-up delay-2 flex justify-center">
+      <div class="relative w-72 h-72 md:w-96 md:h-96">
+        <div class="absolute inset-[-24px] rounded-full border border-gold/20"></div>
+        <div class="absolute inset-[-48px] rounded-full border border-gold/10"></div>
+        <div class="shimmer w-full h-full rounded-full overflow-hidden flex items-center justify-center shadow-2xl shadow-gold/20">
+          <svg class="opacity-40" xmlns="http://www.w3.org/2000/svg" width="80" height="120" viewBox="0 0 80 120">
+            <circle cx="40" cy="20" r="6" fill="none" stroke="#C9A84C" stroke-width="2"/>
+            <line x1="40" y1="26" x2="40" y2="50" stroke="#C9A84C" stroke-width="1.5"/>
+            <polygon points="40,50 28,75 40,68 52,75" fill="#C9A84C" opacity="0.7"/>
+            <polygon points="40,50 28,75 40,68 52,75" fill="none" stroke="#A07828" stroke-width="1"/>
+            <circle cx="40" cy="68" r="5" fill="#FAF8F4" stroke="#C9A84C" stroke-width="1.5"/>
+            <circle cx="40" cy="6"  r="2" fill="#C9A84C"/>
+            <circle cx="34" cy="8"  r="1.5" fill="#C9A84C" opacity="0.5"/>
+            <circle cx="46" cy="8"  r="1.5" fill="#C9A84C" opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="absolute bottom-4 right-0 bg-white border border-gold/30 px-4 py-2 shadow-lg">
+          <p class="font-serif text-xs text-gold">18K Gold</p>
+          <p class="font-sans text-[10px] text-charcoal/50 tracking-wide uppercase">Handcrafted</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-40">
+    <span class="font-sans text-[10px] tracking-[0.2em] uppercase text-charcoal">Scroll</span>
+    <div class="w-px h-10 bg-gold/50 animate-pulse"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     MARQUEE
+═══════════════════════════════════════════ -->
+<div class="bg-gold py-3 overflow-hidden">
+  <div style="animation:marquee 18s linear infinite;display:flex;gap:3rem;white-space:nowrap;">
+    <style>@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}</style>
+    <span class="font-sans text-[11px] tracking-[0.25em] uppercase text-white/90">Free Shipping on Orders Over $150</span>
+    <span class="text-white/50">◆</span>
+    <span class="font-sans text-[11px] tracking-[0.25em] uppercase text-white/90">Ethically Sourced Materials</span>
+    <span class="text-white/50">◆</span>
+    <span class="font-sans text-[11px] tracking-[0.25em] uppercase text-white/90">30-Day Returns</span>
+    <span class="text-white/50">◆</span>
+    <span class="font-sans text-[11px] tracking-[0.25em] uppercase text-white/90">Lifetime Resizing</span>
+    <span class="text-white/50">◆</span>
+    <span class="font-sans text-[11px] tracking-[0.25em] uppercase text-white/90">Free Shipping on Orders Over $150</span>
+    <span class="text-white/50">◆</span>
+    <span class="font-sans text-[11px] tracking-[0.25em] uppercase text-white/90">Ethically Sourced Materials</span>
+    <span class="text-white/50">◆</span>
+    <span class="font-sans text-[11px] tracking-[0.25em] uppercase text-white/90">30-Day Returns</span>
+    <span class="text-white/50">◆</span>
+    <span class="font-sans text-[11px] tracking-[0.25em] uppercase text-white/90">Lifetime Resizing</span>
+    <span class="text-white/50">◆</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PRODUCTS
+═══════════════════════════════════════════ -->
+<section id="products" class="max-w-7xl mx-auto px-6 py-24">
+  <div class="text-center mb-16">
+    <p class="font-sans text-xs tracking-[0.3em] uppercase text-gold mb-3">Our Collections</p>
+    <h2 class="font-serif font-light text-4xl md:text-5xl text-charcoal">Curated Pieces</h2>
+    <div class="mt-5 mx-auto flex items-center gap-3 justify-center">
+      <span class="h-px w-12 bg-gold/40"></span>
+      <span class="text-gold text-sm">◆</span>
+      <span class="h-px w-12 bg-gold/40"></span>
+    </div>
+  </div>
+
+  <!-- Filter pills -->
+  <div class="flex flex-wrap justify-center gap-3 mb-12" id="filter-btns">
+    <button onclick="filterProducts('all')"      data-filter="all"      class="filter-pill active-pill font-sans text-xs tracking-[0.15em] uppercase px-6 py-2 border border-gold bg-gold text-white transition-all duration-200">All</button>
+    <button onclick="filterProducts('ring')"     data-filter="ring"     class="filter-pill font-sans text-xs tracking-[0.15em] uppercase px-6 py-2 border border-gold/40 text-gold hover:bg-gold hover:text-white hover:border-gold transition-all duration-200">Rings</button>
+    <button onclick="filterProducts('earring')"  data-filter="earring"  class="filter-pill font-sans text-xs tracking-[0.15em] uppercase px-6 py-2 border border-gold/40 text-gold hover:bg-gold hover:text-white hover:border-gold transition-all duration-200">Earrings</button>
+    <button onclick="filterProducts('necklace')" data-filter="necklace" class="filter-pill font-sans text-xs tracking-[0.15em] uppercase px-6 py-2 border border-gold/40 text-gold hover:bg-gold hover:text-white hover:border-gold transition-all duration-200">Necklaces</button>
+  </div>
+
+  <!-- Loading state -->
+  <div id="products-loading" class="text-center py-16">
+    <div class="inline-block w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin mb-4"></div>
+    <p class="font-sans text-xs tracking-widest uppercase text-charcoal/40">Loading collection…</p>
+  </div>
+
+  <!-- Error state -->
+  <div id="products-error" class="hidden text-center py-16">
+    <p class="font-serif text-xl text-charcoal/40 font-light mb-2">Could not load products</p>
+    <p class="font-sans text-xs text-charcoal/30">Make sure <code>data/products.json</code> exists in your repository.</p>
+  </div>
+
+  <!-- Product grid -->
+  <div id="product-grid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     ABOUT
+═══════════════════════════════════════════ -->
+<section id="about" class="bg-charcoal text-cream py-24">
+  <div class="max-w-5xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
+    <div>
+      <p class="font-sans text-xs tracking-[0.3em] uppercase text-gold mb-6">Our Philosophy</p>
+      <blockquote class="font-serif font-light text-3xl md:text-4xl leading-snug italic text-cream/90 mb-6">
+        "Beauty is the harmony of purpose and grace."
+      </blockquote>
+      <div class="h-px w-16 bg-gold mb-6"></div>
+      <p class="font-sans font-light text-sm text-cream/60 leading-relaxed">
+        Every Aurum &amp; Co. piece begins as a sketch on paper and ends as a wearable legacy. We partner only with certified artisans and use conflict-free gemstones.
+      </p>
+    </div>
+    <div class="grid grid-cols-2 gap-6">
+      <div class="border border-gold/20 p-6"><p class="font-serif text-4xl text-gold font-light">500+</p><p class="font-sans text-xs tracking-wider uppercase text-cream/50 mt-1">Pieces Crafted</p></div>
+      <div class="border border-gold/20 p-6"><p class="font-serif text-4xl text-gold font-light">18K</p><p class="font-sans text-xs tracking-wider uppercase text-cream/50 mt-1">Pure Gold</p></div>
+      <div class="border border-gold/20 p-6"><p class="font-serif text-4xl text-gold font-light">100%</p><p class="font-sans text-xs tracking-wider uppercase text-cream/50 mt-1">Ethically Sourced</p></div>
+      <div class="border border-gold/20 p-6"><p class="font-serif text-4xl text-gold font-light">5★</p><p class="font-sans text-xs tracking-wider uppercase text-cream/50 mt-1">Avg. Rating</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     CONTACT FORM
+═══════════════════════════════════════════ -->
+<section id="contact" class="max-w-3xl mx-auto px-6 py-24">
+  <div class="text-center mb-14">
+    <p class="font-sans text-xs tracking-[0.3em] uppercase text-gold mb-3">Get in Touch</p>
+    <h2 class="font-serif font-light text-4xl md:text-5xl text-charcoal">Custom Orders &amp; Enquiries</h2>
+    <div class="mt-5 mx-auto flex items-center gap-3 justify-center">
+      <span class="h-px w-12 bg-gold/40"></span><span class="text-gold text-sm">◆</span><span class="h-px w-12 bg-gold/40"></span>
+    </div>
+  </div>
+  <form id="contact-form" onsubmit="handleFormSubmit(event)" class="space-y-6">
+    <div class="grid sm:grid-cols-2 gap-6">
+      <div>
+        <label class="block font-sans text-xs tracking-[0.15em] uppercase text-charcoal/50 mb-2">Full Name *</label>
+        <input type="text" required placeholder="Jane Doe" class="form-input w-full bg-white border border-charcoal/15 px-4 py-3 font-sans text-sm text-charcoal placeholder-charcoal/30 transition-all duration-200"/>
+      </div>
+      <div>
+        <label class="block font-sans text-xs tracking-[0.15em] uppercase text-charcoal/50 mb-2">Email Address *</label>
+        <input type="email" required placeholder="jane@example.com" class="form-input w-full bg-white border border-charcoal/15 px-4 py-3 font-sans text-sm text-charcoal placeholder-charcoal/30 transition-all duration-200"/>
+      </div>
+    </div>
+    <div>
+      <label class="block font-sans text-xs tracking-[0.15em] uppercase text-charcoal/50 mb-2">Subject</label>
+      <select class="form-input w-full bg-white border border-charcoal/15 px-4 py-3 font-sans text-sm text-charcoal transition-all duration-200">
+        <option>Custom Order Enquiry</option>
+        <option>Sizing &amp; Fit Help</option>
+        <option>Order Status</option>
+        <option>Returns &amp; Exchange</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div>
+      <label class="block font-sans text-xs tracking-[0.15em] uppercase text-charcoal/50 mb-2">Message *</label>
+      <textarea required rows="5" placeholder="Tell us about your dream piece…" class="form-input w-full bg-white border border-charcoal/15 px-4 py-3 font-sans text-sm text-charcoal placeholder-charcoal/30 transition-all duration-200 resize-none"></textarea>
+    </div>
+    <div class="flex items-center gap-3">
+      <input type="checkbox" id="agree" required class="accent-gold w-4 h-4"/>
+      <label for="agree" class="font-sans text-xs text-charcoal/50">I agree to the <a href="#" class="text-gold underline underline-offset-2">privacy policy</a></label>
+    </div>
+    <button type="submit" class="w-full bg-gold hover:bg-gold-dark text-white font-sans text-xs tracking-[0.2em] uppercase py-4 transition-colors duration-300">Send Message</button>
+    <p id="form-success" class="hidden text-center font-sans text-xs text-gold tracking-widest uppercase">✓ Message sent! We'll be in touch within 24 hours.</p>
+  </form>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════ -->
+<footer class="border-t border-gold/15 py-10">
+  <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+    <p class="font-serif text-xl font-light tracking-[0.18em] text-charcoal">AURUM <span class="text-gold">&amp;</span> CO.</p>
+    <p class="font-sans text-xs text-charcoal/40 tracking-wide">© 2025 Aurum &amp; Co. All rights reserved.</p>
+    <div class="flex gap-6 font-sans text-xs tracking-[0.12em] uppercase text-charcoal/50">
+      <a href="#" class="hover:text-gold transition-colors">Privacy</a>
+      <a href="#" class="hover:text-gold transition-colors">Terms</a>
+      <a href="#contact" class="hover:text-gold transition-colors">Contact</a>
+      <!-- Handy admin link (only visible when logged in as admin) -->
+      <a id="admin-link" href="/admin/" class="hidden text-gold hover:text-gold-dark transition-colors">Admin ↗</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════
+     CART OVERLAY + SIDEBAR
+═══════════════════════════════════════════ -->
+<div id="cart-overlay" onclick="toggleCart()"
+  class="fixed inset-0 bg-charcoal/40 backdrop-blur-sm z-40 opacity-0 pointer-events-none"></div>
+
+<aside id="cart-sidebar" class="fixed top-0 right-0 h-full w-full max-w-sm bg-cream z-50 shadow-2xl flex flex-col translate-x-full">
+  <div class="flex items-center justify-between px-6 py-5 border-b border-gold/15">
+    <div>
+      <h2 class="font-serif text-xl font-light text-charcoal">Your Cart</h2>
+      <p id="cart-item-count" class="font-sans text-xs text-charcoal/40 tracking-wider mt-0.5">0 items</p>
+    </div>
+    <button onclick="toggleCart()" class="text-charcoal/50 hover:text-charcoal transition-colors focus:outline-none">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div id="cart-items" class="flex-1 overflow-y-auto px-6 py-4 space-y-4 hidden"></div>
+  <div id="cart-empty" class="flex-1 flex flex-col items-center justify-center text-center px-6 py-12">
+    <svg class="text-gold/30 mb-4" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+    <p class="font-serif text-lg text-charcoal/40 font-light">Your cart is empty</p>
+    <p class="font-sans text-xs text-charcoal/30 mt-2 tracking-wide">Add a piece to begin</p>
+  </div>
+  <div id="cart-footer" class="hidden border-t border-gold/15 px-6 py-5 bg-white">
+    <div class="flex justify-between items-center mb-1">
+      <span class="font-sans text-xs tracking-wider uppercase text-charcoal/50">Subtotal</span>
+      <span id="cart-total" class="font-serif text-xl text-charcoal"></span>
+    </div>
+    <p class="font-sans text-[10px] text-charcoal/30 mb-4">Shipping &amp; taxes calculated at checkout</p>
+    <button onclick="handleCheckout()" class="w-full bg-gold hover:bg-gold-dark text-white font-sans text-xs tracking-[0.2em] uppercase py-4 transition-colors duration-300 mb-2">Proceed to Checkout</button>
+    <button onclick="clearCart()" class="w-full text-charcoal/40 hover:text-charcoal font-sans text-xs tracking-wider uppercase py-2 transition-colors">Clear Cart</button>
+  </div>
+</aside>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-charcoal text-cream font-sans text-xs tracking-widest uppercase px-6 py-3 shadow-xl opacity-0 translate-y-4 pointer-events-none z-50 flex items-center gap-3">
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-msg">Added to cart</span>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────────
+// 1. PRODUCT DATA — fetched from /data/products.json
+// ─────────────────────────────────────────────
+let allProducts   = [];   // populated after fetch
+let currentFilter = 'all';
+
+// Fallback emoji / bg when image isn't set in the CMS
+const CATEGORY_DEFAULTS = {
+  ring:     { emoji: '💍', bg: '#F5ECD8' },
+  earring:  { emoji: '✨', bg: '#EAE0F0' },
+  necklace: { emoji: '📿', bg: '#E0EEF5' },
+};
+
+async function loadProducts() {
+  try {
+    // Cache-busting param keeps the grid fresh after CMS saves
+    const res = await fetch('/data/products.json?v=' + Date.now());
+    if (!res.ok) throw new Error('Network response was not ok');
+    const data = await res.json();
+
+    // Support both { products: [...] } and bare array formats
+    allProducts = Array.isArray(data) ? data : (data.products || []);
+
+    // Assign a stable numeric id for the cart
+    allProducts = allProducts.map((p, i) => ({ id: i + 1, ...p }));
+
+    document.getElementById('products-loading').classList.add('hidden');
+    document.getElementById('product-grid').classList.remove('hidden');
+    renderProducts(currentFilter);
+  } catch (err) {
+    console.error('Failed to load products.json:', err);
+    document.getElementById('products-loading').classList.add('hidden');
+    document.getElementById('products-error').classList.remove('hidden');
+  }
+}
+
+// ─────────────────────────────────────────────
+// 2. RENDER PRODUCTS
+// ─────────────────────────────────────────────
+function renderProducts(filter = 'all') {
+  currentFilter = filter;
+  const grid     = document.getElementById('product-grid');
+  const filtered = filter === 'all' ? allProducts : allProducts.filter(p => p.category === filter);
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="col-span-3 text-center py-16">
+      <p class="font-serif text-xl text-charcoal/40 font-light">No items in this category yet.</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(p => {
+    const def     = CATEGORY_DEFAULTS[p.category] || { emoji: '✦', bg: '#F5ECD8' };
+    const bgColor = p.bg || def.bg;
+    const imgHTML = p.image
+      ? `<img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover"/>`
+      : `<span style="font-size:4rem;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.12))">${def.emoji}</span>`;
+
+    return `
+    <div class="product-card bg-white border border-charcoal/6 overflow-hidden" data-category="${p.category}">
+      <div class="relative h-56 flex items-center justify-center overflow-hidden" style="background:${bgColor}">
+        ${imgHTML}
+        <span class="absolute top-3 right-3 bg-white/80 backdrop-blur-sm font-sans text-[10px] tracking-[0.15em] uppercase text-gold px-2 py-1 border border-gold/20">
+          ${p.category}
+        </span>
+      </div>
+      <div class="p-5">
+        <h3 class="font-serif text-lg font-light text-charcoal mb-1">${p.name}</h3>
+        <p class="font-sans text-xs text-charcoal/40 tracking-wide mb-4">${p.description || ''}</p>
+        <div class="flex items-center justify-between">
+          <span class="font-serif text-xl text-charcoal">$${Number(p.price).toLocaleString()}</span>
+          <button onclick="addToCart(${p.id})"
+            class="add-btn border border-gold text-gold font-sans text-xs tracking-[0.12em] uppercase px-5 py-2">
+            Add to Cart
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────
+// 3. FILTER
+// ─────────────────────────────────────────────
+function filterProducts(cat) {
+  document.querySelectorAll('.filter-pill').forEach(btn => {
+    const active = btn.dataset.filter === cat;
+    btn.classList.toggle('bg-gold',       active);
+    btn.classList.toggle('text-white',    active);
+    btn.classList.toggle('border-gold',   active);
+    btn.classList.toggle('text-gold',    !active);
+    btn.classList.toggle('border-gold/40',!active);
+  });
+  renderProducts(cat);
+}
+
+// ─────────────────────────────────────────────
+// 4. CART
+// ─────────────────────────────────────────────
+let cart     = [];
+let cartOpen = false;
+
+function addToCart(id) {
+  const product  = allProducts.find(p => p.id === id);
+  if (!product) return;
+  const existing = cart.find(i => i.id === id);
+  existing ? existing.qty++ : cart.push({ ...product, qty: 1 });
+  updateCartUI();
+  if (!cartOpen) toggleCart();
+  showToast(`${product.name} added`);
+}
+
+function removeFromCart(id) {
+  cart = cart.filter(i => i.id !== id);
+  updateCartUI();
+}
+
+function changeQty(id, delta) {
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+  updateCartUI();
+}
+
+function clearCart() {
+  cart = [];
+  updateCartUI();
+}
+
+function updateCartUI() {
+  const totalQty   = cart.reduce((s, i) => s + i.qty, 0);
+  const totalPrice = cart.reduce((s, i) => s + i.price * i.qty, 0);
+
+  const badge = document.getElementById('cart-count');
+  badge.textContent = totalQty;
+  badge.classList.toggle('hidden', totalQty === 0);
+  badge.classList.toggle('flex',   totalQty > 0);
+  badge.classList.add('badge-pop');
+  setTimeout(() => badge.classList.remove('badge-pop'), 300);
+
+  document.getElementById('cart-item-count').textContent = `${totalQty} item${totalQty !== 1 ? 's' : ''}`;
+
+  const hasItems = cart.length > 0;
+  document.getElementById('cart-empty').classList.toggle('hidden', hasItems);
+  document.getElementById('cart-empty').classList.toggle('flex',  !hasItems);
+  document.getElementById('cart-items').classList.toggle('hidden',!hasItems);
+  document.getElementById('cart-footer').classList.toggle('hidden',!hasItems);
+
+  const def = (cat) => CATEGORY_DEFAULTS[cat] || { emoji: '✦', bg: '#F5ECD8' };
+
+  document.getElementById('cart-items').innerHTML = cart.map(item => {
+    const d    = def(item.category);
+    const bgc  = item.bg || d.bg;
+    const imgH = item.image
+      ? `<img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover rounded-sm"/>`
+      : `<span style="font-size:1.8rem">${d.emoji}</span>`;
+    return `
+    <div class="flex gap-4 items-start py-4 border-b border-charcoal/6">
+      <div class="w-16 h-16 flex items-center justify-center rounded-sm shrink-0 overflow-hidden" style="background:${bgc}">${imgH}</div>
+      <div class="flex-1 min-w-0">
+        <p class="font-serif text-sm font-light text-charcoal leading-tight">${item.name}</p>
+        <p class="font-sans text-[11px] text-charcoal/40 mt-0.5">${item.description || ''}</p>
+        <div class="flex items-center justify-between mt-2">
+          <div class="flex items-center gap-2">
+            <button onclick="changeQty(${item.id},-1)" class="w-6 h-6 border border-gold/30 text-gold hover:bg-gold hover:text-white transition-colors">−</button>
+            <span class="font-sans text-xs text-charcoal w-4 text-center">${item.qty}</span>
+            <button onclick="changeQty(${item.id}, 1)" class="w-6 h-6 border border-gold/30 text-gold hover:bg-gold hover:text-white transition-colors">+</button>
+          </div>
+          <p class="font-serif text-sm text-charcoal">$${(item.price * item.qty).toLocaleString()}</p>
+        </div>
+      </div>
+      <button onclick="removeFromCart(${item.id})" class="text-charcoal/25 hover:text-red-400 transition-colors mt-0.5 shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+      </button>
+    </div>`;
+  }).join('');
+
+  document.getElementById('cart-total').textContent = `$${totalPrice.toLocaleString()}`;
+}
+
+function toggleCart() {
+  cartOpen = !cartOpen;
+  const sidebar  = document.getElementById('cart-sidebar');
+  const overlay  = document.getElementById('cart-overlay');
+  sidebar.classList.toggle('translate-x-full', !cartOpen);
+  sidebar.classList.toggle('translate-x-0',     cartOpen);
+  overlay.classList.toggle('opacity-0',        !cartOpen);
+  overlay.classList.toggle('pointer-events-none',!cartOpen);
+  overlay.classList.toggle('opacity-100',       cartOpen);
+  document.body.style.overflow = cartOpen ? 'hidden' : '';
+}
+
+function handleCheckout() {
+  if (!cart.length) return;
+  toggleCart();
+  showToast('Redirecting to checkout…');
+  setTimeout(() => document.getElementById('contact').scrollIntoView({ behavior: 'smooth' }), 800);
+}
+
+// ─────────────────────────────────────────────
+// 5. TOAST
+// ─────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  toast.classList.remove('opacity-0','translate-y-4');
+  toast.classList.add('opacity-100','translate-y-0');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.classList.add('opacity-0','translate-y-4');
+    toast.classList.remove('opacity-100','translate-y-0');
+  }, 2500);
+}
+
+// ─────────────────────────────────────────────
+// 6. CONTACT FORM
+// ─────────────────────────────────────────────
+function handleFormSubmit(e) {
+  e.preventDefault();
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.textContent = 'Sending…';
+  btn.disabled = true;
+  setTimeout(() => {
+    document.getElementById('form-success').classList.remove('hidden');
+    e.target.reset();
+    btn.textContent = 'Send Message';
+    btn.disabled = false;
+  }, 1200);
+}
+
+// ─────────────────────────────────────────────
+// 7. NETLIFY IDENTITY — Login, Logout, Role-based Redirect
+// ─────────────────────────────────────────────
+function isAdmin(user) {
+  // Netlify Identity stores roles in app_metadata
+  const roles = user?.app_metadata?.roles || [];
+  return roles.includes('admin');
+}
+
+function syncAuthUI(user) {
+  document.getElementById('login-btn').classList.toggle('hidden',  !!user);
+  document.getElementById('logout-btn').classList.toggle('hidden', !user);
+  document.getElementById('admin-link').classList.toggle('hidden', !(user && isAdmin(user)));
+}
+
+function handleLogout() {
+  netlifyIdentity.logout();
+}
+
+function showLoginBanner() {
+  const banner = document.getElementById('login-banner');
+  banner.classList.remove('hidden');
+  // Trigger transition on next frame
+  requestAnimationFrame(() => {
+    banner.classList.remove('opacity-0','translate-y-2');
+    banner.classList.add('opacity-100','translate-y-0');
+  });
+  setTimeout(() => {
+    banner.classList.add('opacity-0','translate-y-2');
+    banner.classList.remove('opacity-100','translate-y-0');
+    setTimeout(() => banner.classList.add('hidden'), 400);
+  }, 3500);
+}
+
+// Initialise Identity widget
+netlifyIdentity.on('init', user => {
+  syncAuthUI(user);
+});
+
+netlifyIdentity.on('login', user => {
+  netlifyIdentity.close();
+  syncAuthUI(user);
+
+  if (isAdmin(user)) {
+    // Admin → go straight to the CMS dashboard
+    window.location.href = '/admin/';
+  } else {
+    // Regular user → friendly banner on the homepage
+    showLoginBanner();
+  }
+});
+
+netlifyIdentity.on('logout', () => {
+  syncAuthUI(null);
+  showToast('You have been logged out.');
+});
+
+// ─────────────────────────────────────────────
+// 8. INIT
+// ─────────────────────────────────────────────
+loadProducts();
+</script>
+</body>
+</html>
