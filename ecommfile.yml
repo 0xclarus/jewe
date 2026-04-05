@@ -1,0 +1,67 @@
+# ─────────────────────────────────────────────
+# Decap CMS — Aurum & Co. Configuration
+# ─────────────────────────────────────────────
+
+backend:
+  name: git-gateway          # Uses Netlify Identity + Git Gateway
+  branch: main               # Branch to update (change to "master" if needed)
+
+# Where uploaded images are stored in the repo
+media_folder: "images/uploads"
+
+# The public URL path for those same images
+public_folder: "/images/uploads"
+
+# ── Collections ───────────────────────────────
+collections:
+  - name: "products"                 # Internal CMS identifier
+    label: "Products"                # Label shown in the CMS sidebar
+    format: "json"                   # Save as JSON
+    # All products are stored in ONE file (file-type collection)
+    files:
+      - name: "products"
+        label: "Product Catalogue"
+        file: "data/products.json"   # Path in repo where data is saved
+        fields:
+          # The top-level field is a list of product objects
+          - label: "Products"
+            name: "products"
+            widget: "list"
+            summary: "{{fields.name}} — ${{fields.price}}"
+            fields:
+              - label: "Product Name"
+                name: "name"
+                widget: "string"
+                hint: "e.g. Lumière Solitaire Ring"
+
+              - label: "Price (USD)"
+                name: "price"
+                widget: "number"
+                value_type: "float"
+                min: 1
+                hint: "Enter a number only, e.g. 1280"
+
+              - label: "Category"
+                name: "category"
+                widget: "select"
+                options:
+                  - { label: "Ring",     value: "ring"     }
+                  - { label: "Earring",  value: "earring"  }
+                  - { label: "Necklace", value: "necklace" }
+
+              - label: "Short Description"
+                name: "description"
+                widget: "string"
+                hint: "e.g. 18K gold · 1ct diamond"
+
+              - label: "Product Image"
+                name: "image"
+                widget: "image"
+                required: false
+                hint: "Upload a product photo (JPG or PNG recommended)"
+
+              - label: "Background Colour (hex)"
+                name: "bg"
+                widget: "string"
+                default: "#F5ECD8"
+                hint: "Subtle card background, e.g. #F5ECD8"
