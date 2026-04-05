@@ -1,0 +1,28 @@
+{
+  "products": [
+    {
+      "name": "Lumière Solitaire Ring",
+      "price": 1280,
+      "category": "ring",
+      "description": "18K gold · 1ct diamond",
+      "image": "",
+      "bg": "#F5ECD8"
+    },
+    {
+      "name": "Cascade Drop Earrings",
+      "price": 640,
+      "category": "earring",
+      "description": "18K gold · sapphire drops",
+      "image": "",
+      "bg": "#EAE0F0"
+    },
+    {
+      "name": "Étoile Pendant Necklace",
+      "price": 890,
+      "category": "necklace",
+      "description": "18K gold · star-set diamonds",
+      "image": "",
+      "bg": "#E0EEF5"
+    }
+  ]
+}
