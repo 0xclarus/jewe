@@ -23,6 +23,14 @@
       "description": "18K gold · star-set diamonds",
       "image": "",
       "bg": "#E0EEF5"
+    },
+    {
+      "bg": "#F5ECD8",
+      "image": "/images/uploads/photo_2023-09-18_09-30-25.jpg",
+      "description": "test",
+      "category": "necklace",
+      "name": "test",
+      "price": 22222
     }
   ]
 }
