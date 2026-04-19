@@ -13,7 +13,7 @@
       "price": 640,
       "category": "earring",
       "description": "18K gold · sapphire drops",
-      "image": "",
+      "image": "/images/uploads/cascade-drop-earrings.png",
       "bg": "#EAE0F0"
     },
     {
@@ -21,7 +21,7 @@
       "price": 890,
       "category": "necklace",
       "description": "18K gold · star-set diamonds",
-      "image": "",
+      "image": "/images/uploads/étoile-pendant-necklace.png",
       "bg": "#E0EEF5"
     }
   ]
